@@ -1,0 +1,16 @@
+# Build Files
+node_modules/
+dist/
+build/
+.vscode/
+
+# Sensitive Files
+.env
+
+# User-specific settings/data
+logs/
+temp/
+cache/
+*.log
+*.swp
+.DS_Store
