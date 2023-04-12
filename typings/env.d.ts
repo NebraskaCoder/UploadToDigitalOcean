@@ -1,5 +1,6 @@
 declare namespace NodeJS {
   interface ProcessEnv {
+    HEADLESS?: string;
     SOURCE_DIR?: string;
     SPACE_NAME?: string;
     SPACE_FOLDER_PATH?: string;

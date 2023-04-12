@@ -5,7 +5,34 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+export const checkIsHeadless = () =>
+  process.env.HEADLESS && process.env.HEADLESS.trim().length > 0
+    ? process.env.HEADLESS.toLowerCase() === "y" ||
+      process.env.HEADLESS.toLowerCase() === "yes" ||
+      process.env.HEADLESS.toLowerCase() === "1" ||
+      process.env.HEADLESS.toLowerCase() === "t" ||
+      process.env.HEADLESS.toLowerCase() === "true"
+    : false;
+
 export const checkRequiredEnvVars = () => {
+  const isHeadless = checkIsHeadless();
+
+  if (isHeadless && !process.env.SOURCE_DIR) {
+    console.log(
+      "Because this is running headless, you must provide the source directory 'SOURCE_DIR' env variable."
+    );
+
+    return false;
+  }
+
+  if (isHeadless && !process.env.SPACE_FOLDER_PATH) {
+    console.log(
+      "Because this is running headless, you must provide the Digital Ocean folder path 'SPACE_FOLDER_PATH' env variable."
+    );
+
+    return false;
+  }
+
   if (!process.env.SPACE_NAME) {
     console.log(
       "You must provide the Digital Ocean 'SPACE_NAME' env variable."
@@ -83,6 +110,11 @@ export const getDestinationFolderPath = (): Promise<string> => {
 
 export const getConfirmation = () => {
   return new Promise((resolve, reject) => {
+    if (checkIsHeadless()) {
+      console.log("Running headless. Continuing automatically...");
+      return resolve("yes");
+    }
+
     rl.question("To continue, enter Y/YES: ", (input) => {
       if (
         !input ||
