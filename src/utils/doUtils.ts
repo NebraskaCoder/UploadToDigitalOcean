@@ -47,9 +47,10 @@ export const createDestinationFolder = async (folderPath: string) => {
 
   try {
     await s3.send(new PutObjectCommand(params));
-    console.log(`Folder created: ${folderPath}`);
+    console.log(`Folder created: ${folderPath}\r\n`);
   } catch (error) {
     console.error(`Failed to create folder ${folderPath}`, error);
+    throw error;
   }
 };
 
@@ -78,38 +79,49 @@ export const uploadFile = async (filePath: string) => {
   }
 };
 
+export const expectFolderToExist = (sourceFolder: string) => {
+  if (
+    !fs.existsSync(sourceFolder) ||
+    !fs.statSync(sourceFolder).isDirectory()
+  ) {
+    throw Error(`Folder does not exist or is not a folder ${sourceFolder}`);
+  }
+};
+
+export const logFolderFiles = (sourceFolder: string) => {
+  expectFolderToExist(sourceFolder);
+
+  const fileNames = fs.readdirSync(sourceFolder);
+  console.log("Files in directory", fileNames);
+
+  return fileNames;
+};
+
 export const uploadFolder = async (
   sourceFolder: string,
   destinationFolder: string
 ) => {
   await createDestinationFolder(destinationFolder);
 
-  if (
-    !fs.existsSync(sourceFolder) ||
-    !fs.statSync(sourceFolder).isDirectory()
-  ) {
-    throw Error(`Folder does not exist or is not a folder ${sourceFolder}`);
-  } else {
-    const fileNames = fs.readdirSync(sourceFolder);
+  const fileNames = logFolderFiles(sourceFolder);
 
-    console.log("Files in directory", fileNames);
+  console.log("\r\n");
 
-    const publicUrls: string[] = [];
+  const publicUrls: string[] = [];
 
-    for (const fileName of fileNames) {
-      const filePath = path.join(sourceFolder, fileName);
-      const fileStat = fs.statSync(filePath);
+  for (const fileName of fileNames) {
+    const filePath = path.join(sourceFolder, fileName);
+    const fileStat = fs.statSync(filePath);
 
-      if (fileStat.isFile()) {
-        const publicUrl = await uploadFile(filePath);
-        if (publicUrl) {
-          publicUrls.push(publicUrl);
-        }
-      } else {
-        console.log("Skipping File", fileName);
+    if (fileStat.isFile()) {
+      const publicUrl = await uploadFile(filePath);
+      if (publicUrl) {
+        publicUrls.push(publicUrl);
       }
+    } else {
+      console.log("Skipping File", fileName);
     }
-
-    return publicUrls;
   }
+
+  return publicUrls;
 };
