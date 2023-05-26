@@ -8,7 +8,11 @@ import {
   getConfirmation,
 } from "./utils/configUtils";
 
-import { initClientAndCheck, uploadFolder } from "./utils/doUtils";
+import {
+  initClientAndCheck,
+  logFolderFiles,
+  uploadFolder,
+} from "./utils/doUtils";
 
 dotenv.config();
 
@@ -33,6 +37,8 @@ const main = async () => {
   console.log("Does this look right?\r\n\r\n");
   console.log(`     Source Folder: ${sourceFolderPath}`);
   console.log(`Destination Folder: ${destinationFolderPath}\r\n`);
+  logFolderFiles(sourceFolderPath);
+  console.log("\r\n");
 
   await getConfirmation();
 
@@ -50,4 +56,6 @@ const main = async () => {
   });
 };
 
-main();
+main().catch((err) => {
+  console.log("Cannot continue because of error: ", err);
+});
