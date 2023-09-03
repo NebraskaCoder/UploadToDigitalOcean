@@ -3,6 +3,10 @@ import {
   S3Client,
   PutObjectCommand,
   PutObjectCommandInput,
+  ListObjectsV2Command,
+  ListObjectsV2CommandInput,
+  GetObjectCommand,
+  GetObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { createRequest } from "@aws-sdk/util-create-request";
 import { formatUrl } from "@aws-sdk/util-format-url";
@@ -124,4 +128,77 @@ export const uploadFolder = async (
   }
 
   return publicUrls;
+};
+
+export const listObjectsFromSpace = async (folderPath: string) => {
+  const params: ListObjectsV2CommandInput = {
+    Bucket: process.env.SPACE_NAME!,
+    Prefix: folderPath,
+  };
+
+  try {
+    const response = await s3.send(new ListObjectsV2Command(params));
+    return response.Contents ?? [];
+  } catch (error) {
+    console.error(`Failed to list objects from ${folderPath}`, error);
+    throw error;
+  }
+};
+
+export const downloadObject = async (
+  objectKey: string,
+  destinationPath: string
+) => {
+  // If the objectKey ends with a '/', it indicates a "folder" object in Spaces
+  if (objectKey.endsWith("/")) {
+    // Ensure the directory exists on the local filesystem
+    if (!fs.existsSync(destinationPath)) {
+      fs.mkdirSync(destinationPath, { recursive: true });
+    }
+  } else {
+    const params: GetObjectCommandInput = {
+      Bucket: process.env.SPACE_NAME!,
+      Key: objectKey,
+    };
+
+    try {
+      const response = await s3.send(new GetObjectCommand(params));
+      const fileStream = response.Body as NodeJS.ReadableStream;
+      if (fileStream) {
+        return new Promise((resolve, reject) => {
+          const writeStream = fs.createWriteStream(destinationPath);
+          fileStream.on("error", reject);
+          writeStream.on("error", reject);
+          writeStream.on("finish", resolve);
+          fileStream.pipe(writeStream);
+        });
+      }
+      console.log(`Downloaded ${objectKey} to ${destinationPath}`);
+    } catch (error) {
+      console.error(`Failed to download object ${objectKey}`, error);
+      throw error;
+    }
+  }
+};
+
+export const downloadAllFromSpace = async (
+  sourcePath: string,
+  localDestinationPath: string
+) => {
+  const objects = await listObjectsFromSpace(sourcePath);
+
+  for (const obj of objects) {
+    if (obj.Key) {
+      const objectPath = obj.Key.replace(sourcePath, "").slice(1); // Remove source path and leading slash
+      const destinationPath = path.join(localDestinationPath, objectPath);
+
+      // Ensure directory exists
+      const dir = path.dirname(destinationPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      await downloadObject(obj.Key, destinationPath);
+    }
+  }
 };

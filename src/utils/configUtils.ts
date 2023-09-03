@@ -133,3 +133,38 @@ export const clearConsoleScreen = () =>
   process.stdout.write(
     process.platform === "win32" ? "\x1Bc" : "\x1B[2J\x1B[3J\x1B[H"
   );
+
+export const getDownloadSourcePath = () => {
+  return new Promise<string>((resolve, reject) => {
+    if (process.env.DO_SPACES_DOWNLOAD_SOURCE) {
+      return resolve(process.env.DO_SPACES_DOWNLOAD_SOURCE);
+    }
+
+    rl.question(
+      "Enter the source folder path in DigitalOcean Spaces: ",
+      (answer) => {
+        if (answer) {
+          resolve(answer);
+        } else {
+          reject("Source folder path in DigitalOcean Spaces is required.");
+        }
+      }
+    );
+  });
+};
+
+export const getDownloadDestinationPath = () => {
+  return new Promise<string>((resolve, reject) => {
+    if (process.env.DOWNLOAD_DESTINATION_PATH) {
+      return resolve(process.env.DOWNLOAD_DESTINATION_PATH);
+    }
+
+    rl.question("Enter the local destination folder path: ", (answer) => {
+      if (answer) {
+        resolve(answer);
+      } else {
+        reject("Local destination folder path is required.");
+      }
+    });
+  });
+};
