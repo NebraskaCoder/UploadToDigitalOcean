@@ -71,6 +71,9 @@ export const uploadFile = async (filePath: string) => {
 
   try {
     console.log(`Uploading ${filePath}`);
+
+    // TODO: Multipart upload
+    // Reference: https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-upload-object.html
     await s3.send(new PutObjectCommand(params));
 
     // Generate the public URL
